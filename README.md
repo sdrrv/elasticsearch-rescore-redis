@@ -24,8 +24,11 @@ Follow the standard plugin installation instructions, with a zip version of the 
   "rescore": {
     "redis":{
       "key_field": "productId.keyword",
-      "key_prefix": "mystore-",
-      "score_operator": "MULTIPLY"
+      "key_prefixes": ["mystore-","gympass-"],
+      "score_weights": [0.5, 1.0],
+      "score_operator": "ADD",
+      "boost_operator": "ADD",
+      "boost_weight": 1.0
     } 
   } 
 }
@@ -41,7 +44,38 @@ You can use `0` to demote results (e.g. mark as unavailable in stock), `1` to le
 <br/>
 <br/>
 
-# Plugin Builder and Installation
+
+# Plugin Installer
+<br/>
+
+## 0- Dowload the plugin
+If you dont have the **.zip** of the compiled plugin you need to download it.  
+You can download it in the [release page](https://github.com/sdrrv/elasticsearch-rescore-redis/releases).
+
+<br/>
+
+## 1- Install the Plugin
+Now you can `cd` into to the `bin` folder in your **ElasticSearch** instalation and run :
+```bash
+$ ./elasticsearch-plugin install file://dirOfYourPlugin
+```
+<br/>
+
+## 2- Change the Redis host
+By default the plugin will think that your **Redis** server is running in the `localhost:6379` , that beeing said, you can change the `Host` but not the `Port`.
+The `Port` will always be `6379` because that's the default `Port` for the **Redis** server to run on. 
+<br/>
+To change the `Host`, you first need to go to the `config` folder in your **ElasticSearch** dir.
+There open the `elasticsearch.yml` file, you want to add the following:
+
+```YAML
+redisRescore.redisUrl : "YourHostIP"
+```
+
+<br/>
+<br/>
+
+# Plugin Builder
 
 ## 1- First of all pull the git rep into your machine
 <br/>
@@ -91,21 +125,7 @@ There will be 4 files in that dir, you want to take the `.zip` file.
 
 <br/>
 
-## 7-  Install the Plugin
-Now you can `cd` into to the `bin` folder in your **ElasticSearch** instalation and run :
-```bash
-$ ./elasticsearch-plugin install file://dirOfYourPlugin
-```
-<br/>
+## 7- Install the Plugin
+See the **Plugin Installer** section
 
-## 8- Change the Redis host
-By default the plugin will think that your **Redis** server is running in the `localhost:6379` , that beeing said, you can change the `Host` but not the `Port`.
-The `Port` will always be `6379` because that's the default `Port` for the **Redis** server to run on. 
-<br/>
-To change the `Host`, you first need to go to the `config` folder in your **ElasticSearch** dir.
-There open the `elasticsearch.yml` file, you want to add the following:
-
-```YAML
-redisRescore.redisUrl : "YourHostIP"
-```
 
