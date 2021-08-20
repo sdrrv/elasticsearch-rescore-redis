@@ -54,7 +54,7 @@ A list that contains the `key_prefixes` to use
 
 ## --> `score_weights` : float[]
 A list that holds the weight value for each of the key_prefixes in the `key_prefixes` field.    
-For example, in the **Usage** section, the `key_prefix` "mystore-" is beeing multiplied by **0.5** and the "gympass-" for **1**.
+For example, in the **Usage** section, the `key_prefix` *"mystore-"* is beeing multiplied by **0.5** and the *"gympass-"* for **1**.
 
 <br/>
 
@@ -77,14 +77,24 @@ The formula is:
 **score** = *elasticsearch_score* (`boost_operator`) ( redis[`key_prefix[0]`+`key_field`] (`score_operator`) redis[`key_prefix[n-1]`+`key_field`])
 
 
-If `score_operator`: "ADD" **&** `boost_operator`: "MULTIPLY",   
+If `score_operator`: *"ADD"* **&** `boost_operator`: *"MULTIPLY"*,   
 The formula will be:
 ```
 score = elasticsearch_score * ( redis[mystore-20] + redis[gympass-20])
 ```
 
+<br/>
+<br/>
 
+# Field Default Values
+The only field that is **required** for the plugin to run is the `key_field`, all the others can be `null`.
+## Default Values
+### `score_operator` | `boost_operator`
+***"ADD"***
+<br/>
 
+### `scores_weight` | `boost_weight` 
+***1***
 <br/>
 <br/>
 
