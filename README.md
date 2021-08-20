@@ -33,7 +33,6 @@ Follow the standard plugin installation instructions, with a zip version of the 
   } 
 }
 ```
-
 In this example, we are expecting each hit to contain a field `productId` (of keyword type). The value of that field will be looked up in Redis as a key (for example, Redis key `mystore-abc123` will be looked-up for a document with productId abc123; the `mystore-` key prefix is configurable in query time).
 The `score_operator` field is the operator you want to be using when doing your final rescore, you can use `ADD`, `MULTIPLY`, or `SUBTRACT`.
 
@@ -44,6 +43,50 @@ You can use `0` to demote results (e.g. mark as unavailable in stock), `1` to le
 <br/>
 <br/>
 
+# Fields and how to use them
+
+<br/>
+
+## --> `key_prefixes` : str[]
+A list that contains the `key_prefixes` to use
+
+<br/>
+
+## --> `score_weights` : float[]
+A list that holds the weight value for each of the key_prefixes in the `key_prefixes` field.    
+For example, in the **Usage** section, the `key_prefix` "mystore-" is beeing multiplied by **0.5** and the "gympass-" for **1**.
+
+<br/>
+
+## --> `boost_weight` : float
+Holds the weight value of the **elasticsearch_score**.
+For example, if the **elasticsearch_score** is **2** and the `boost_weight` **0.5** then the final **elasticsearch_score** will be **1**. 
+
+<br/>
+
+## --> `score_operator` | `boost_operator` : str
+Can be:
+
+- MULTiPLY
+- ADD
+- SET
+- SUBTRACT
+
+The formula is:
+
+**score** = *elasticsearch_score* (`boost_operator`) ( redis[`key_prefix[0]`+`key_field`] (`score_operator`) redis[`key_prefix[n-1]`+`key_field`])
+
+
+If `score_operator`: "ADD" **&** `boost_operator`: "MULTIPLY",   
+The formula will be:
+```
+score = elasticsearch_score * ( redis[mystore-20] + redis[gympass-20])
+```
+
+
+
+<br/>
+<br/>
 
 # Plugin Installer
 <br/>
