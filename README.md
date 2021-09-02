@@ -130,7 +130,7 @@ redisRescore.redisUrl : "YourHostIP"
 
 # Plugin Builder
 
-## 1- First of all pull the git rep into your machine
+## 1- First pull the git rep into your machine
 <br/>
 
 ## 2- Install gradle in your machine
@@ -158,17 +158,18 @@ Once again, in order for the build to work you need to have the **Docker** insta
 
 ```bash
 $ sudo apt install docker
+$ sudo apt install docker-compose
 $ sudo docker pull redis
 ```
 <br/>
 
 ## 5- Build the Plugin
-Finally you are ready to build the Plugin.<br/>
-You can run the gradle compiler by using:
+Finally, you are ready to build the Plugin.<br/>
+You can run the gradle compiler by using in the project folder:
 ```bash
-$ gradle build
+$ ./gradlew build
 ```
-However if you are using the <strong>Intelij</strong> IDE, you can simply run the `gradle build` task.
+However, if you are using the <strong>Intelij</strong> IDE, you can simply run the `gradle build` task.
 
 <br/>
 
@@ -178,7 +179,19 @@ There will be 4 files in that dir, you want to take the `.zip` file.
 
 <br/>
 
-## 7- Install the Plugin
-See the **Plugin Installer** section
+## 7-  Install the Plugin
+Now you can `cd` into to the `bin` folder in your **ElasticSearch** instalation and run :
+```bash
+$ ./elasticsearch-plugin install file://dirOfYourPlugin
+```
+<br/>
+
+## 8- Change the Redis host
+By default, the plugin will think that your **Redis** server is running in the `localhost:6379` , that beeing said, you can change the `Host` but not the `Port`.
+The `Port` will always be `6379` because that's the default `Port` for the **Redis** server to run on. 
+<br/>
+To change the `Host`, you first need to go to the `config` folder in your **ElasticSearch** dir.
+There open the `elasticsearch.yml` file, you want to add the following:
+
 
 
