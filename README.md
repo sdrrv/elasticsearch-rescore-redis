@@ -24,8 +24,9 @@ Follow the standard plugin installation instructions, with a zip version of the 
   "rescore": {
     "redis":{
       "key_field": "productId.keyword",
-      "key_prefixes": ["mystore-","gympass-"],
+      "key_prefixes": ["mystore-","gympass-","gym-"],
       "score_weights": [0.5, 1.0],
+      "score_functions":["null","pow(_,2)"],
       "score_operator": "ADD",
       "boost_operator": "ADD",
       "boost_weight": 1.0
@@ -82,6 +83,20 @@ The formula will be:
 ```
 score = elasticsearch_score * ( redis[mystore-20] + redis[gympass-20])
 ```
+<br/>
+
+## --> `score_functions` : str[]
+
+A list that holds the functions to be applied to eatch value on redis, corresponding to the `key_prefixes`.
+
+In the example we have **"null"** linked to `"mystore-"` and **"pow(_, 2)"** linked to `"gympass-"`, what does this mean?
+
+Well **"null"** is the default value, so the `"mystore-"` field will return its normal value without any modification. On the other hand we have the `"gympass-"` field that is beeing afected by the **pow(_,2)** function, in this case the plugin will take the value stored in the redis data base with key `gympass-{productId.keyword}` and a apply it to the function given, where the arg `"_"` is.
+
+In this case lets imagine that the stored value is *3*, so the rescore for that field will be `pow(3,2)` = **9**.
+
+It's important to note that the `score_functions` field, just like the `score_weights`, uses indexes to work.
+
 
 <br/>
 <br/>
@@ -95,6 +110,11 @@ The only field that is **required** for the plugin to run is the `key_field`, al
 
 ### `scores_weight` | `boost_weight` 
 ***1***
+<br/>
+
+### `score_functions`
+***"null"***
+<br/>
 <br/>
 <br/>
 
