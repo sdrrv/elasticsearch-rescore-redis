@@ -527,6 +527,8 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
         private static float getRescore(final String key, @Nullable final String keyPrefix, @Nullable float scoreWeight,
                                         @Nullable int keyPrefixesIndex, @Nullable String[] scoreFunctions)
                 throws ScoreFunctionParseException {
+            if(scoreWeight == 0) //Optimizations
+                return 0f;
 
             if (scoreFunctions == null || scoreFunctions.length == 0)
                 return getScoreFactor(key, keyPrefix, scoreWeight);
@@ -544,7 +546,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
 
 
                 //--------------------------------------------Functions---------------------------------------------------
-                switch (parsed[0]) {
+                switch (parsed[0]) { // Add Here Functions
                     case "pow":
                         res = ScoreFunctionsObj.get().pow(Float.parseFloat(parsed[1]), Float.parseFloat(parsed[2]));
                         break;

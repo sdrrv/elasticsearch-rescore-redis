@@ -11,7 +11,7 @@ public class ScoreFunctionsObj {
         return _scoreFunctions;
     }
 
-    //----------------------Functions-------------------------------------
+    //---------------------ADD-HERE-Functions-------------------------------------
     public float pow(float base, float exponent){
         return (float) Math.pow(base,exponent);
     }
