@@ -196,7 +196,3 @@ However, if you are using the <strong>Intelij</strong> IDE, you can simply run t
 ## 6- Get the Plugin
 After the successful build the compiled plugin will be under the `distributions` folder inside the `build` folder.
 There will be 4 files in that dir, you want to take the `.zip` file.
-
-<br/>
-
-
