@@ -28,6 +28,7 @@ import org.elasticsearch.search.rescore.RescoreContext;
 import org.elasticsearch.search.rescore.Rescorer;
 import org.elasticsearch.search.rescore.RescorerBuilder;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.exceptions.JedisConnectionException;
 
 import java.io.IOException;
 import java.security.AccessController;
@@ -70,9 +71,13 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
     private final String[] possibleOperators = new String[]{"MULTIPLY","ADD","SUBTRACT","SET"};//possible operators
 
     private static Jedis jedis;
+    private static Config config;
 
     public static void setJedis(Jedis j) {
         jedis = j;
+    }
+    public static void setConfig(Config cfg){
+        config = cfg;
     }
 
     public Boolean checkOperator(String operator){ // checks if it's possible to use that operator
@@ -558,8 +563,25 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
             assert key != null;
 
             return AccessController.doPrivileged((PrivilegedAction<Float>) () -> {
+                if (scoreWeight == 0) //Optimization
+                    return 0f;
+
                 final String fullKey = fullKey(key, keyPrefix);
-                final String factor = jedis.get(fullKey);
+                final String factor ;
+                String _factorTmp = null;
+
+                try{
+                    _factorTmp = jedis.get(fullKey);
+                    log.info("Get Key: "+fullKey+ " --> "+_factorTmp);
+                }
+                catch(JedisConnectionException e){
+                    log.warn("BREAK CONNECTION ERROR, try to re-correct");
+                    setJedis(new Jedis( config.getRedisUrl() ));
+                    _factorTmp = jedis.get(fullKey);
+                }
+
+                factor = _factorTmp;
+
                 if (factor == null) {
                     log.debug("Redis rescore factor null for key " + keyPrefix + key);
                     return 1.0f;

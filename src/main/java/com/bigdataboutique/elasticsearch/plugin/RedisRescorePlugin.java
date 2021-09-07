@@ -16,6 +16,7 @@ public class RedisRescorePlugin extends Plugin implements SearchPlugin {
 
     public RedisRescorePlugin(final Settings settings, final Path configPath) {
         this.config = new Config(settings);
+        RedisRescoreBuilder.setConfig(this.config);
         RedisRescoreBuilder.setJedis(new Jedis(config.getRedisUrl()));
     }
     /**
