@@ -65,6 +65,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
     private final Float boostWeight;
     private final Float[] scoreWeights;
     private final String[] scoreFunctions;
+    private final String userId;
 
 
 
@@ -116,7 +117,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
     public RedisRescoreBuilder(final String keyField, @Nullable String keyPrefix, @Nullable String scoreOperator,
                                @Nullable String[] keyPrefixes, @Nullable String boostOperator,
                                @Nullable Float boostWeight, @Nullable Float[] scoreWeights,
-                               @Nullable String[] scoreFunctions)
+                               @Nullable String[] scoreFunctions, @Nullable String userId)
             throws ScoreOperatorException {
 
         this.keyField =  keyField;
@@ -127,6 +128,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
         this.boostWeight = boostWeight == null ? BOOST_WEIGHT_DEFAULT : boostWeight;
         this.scoreWeights = scoreWeights;
         this.scoreFunctions = scoreFunctions;
+        this.userId = userId;
 
 
         if (!checkOperator(this.scoreOperator))
@@ -148,7 +150,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
         boostWeight = BOOST_WEIGHT_DEFAULT;
         scoreWeights = null;
         scoreFunctions = null;
-
+        userId = null;
 
     }
 //--------------------------------------------------------------------------------------------------
@@ -177,6 +179,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
     private static final ParseField BOOST_WEIGHT = new ParseField("boost_weight");
     private static final ParseField SCORE_WEIGHTS = new ParseField("score_weights");
     private static final ParseField SCORE_FUNCTIONS = new ParseField("score_functions");
+    private static final ParseField USER_ID = new ParseField ("user_id");
 
 
     @Override
@@ -197,6 +200,8 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
 
         builder.field(SCORE_FUNCTIONS.getPreferredName(), scoreFunctions);
 
+        builder.field(USER_ID.getPreferredName(),userId);
+
 
 
     }
@@ -208,7 +213,8 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
                 try {
                     return new RedisRescoreBuilder((String) args[0], (String) args[1], (String) args[2],
                             GetStringArray((ArrayList<?>) args[3]) , (String) args[4],
-                            (Float) args[5], GetFloatArray((ArrayList<?>) args[6]), GetStringArray((ArrayList<?>) args[7]));
+                            (Float) args[5], GetFloatArray((ArrayList<?>) args[6]),
+                            GetStringArray((ArrayList<?>) args[7]), (String) args[8]);
 
                 } catch (IOException e) {
                     throw new IllegalArgumentException(e);
@@ -224,6 +230,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
         PARSER.declareFloat(optionalConstructorArg(), BOOST_WEIGHT);
         PARSER.declareFloatArray(optionalConstructorArg(), SCORE_WEIGHTS);
         PARSER.declareStringArray(optionalConstructorArg(),SCORE_FUNCTIONS);
+        PARSER.declareString(optionalConstructorArg(), USER_ID);
     }
     public static RedisRescoreBuilder fromXContent(XContentParser parser) {
         return PARSER.apply(parser, null);
@@ -234,7 +241,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
         IndexFieldData<?> keyField =
                 this.keyField == null ? null : context.getForField(context.fieldMapper(this.keyField));
         return new RedisRescoreContext(windowSize, keyPrefix, keyField, scoreOperator,
-                keyPrefixes, boostOperator, boostWeight, scoreWeights, scoreFunctions);
+                keyPrefixes, boostOperator, boostWeight, scoreWeights, scoreFunctions, userId);
     }
 
     @Override
@@ -293,6 +300,11 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
         return scoreFunctions;
     }
 
+    @Nullable
+    String userId(){
+        return userId;
+    }
+
 
     private static class RedisRescoreContext extends RescoreContext {
         private final String keyPrefix;
@@ -304,9 +316,11 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
         private final String[] scoreFunctions;
         @Nullable
         private final IndexFieldData<?> keyField;
+        private final String userId;
 
         RedisRescoreContext(int windowSize, String keyPrefix, @Nullable IndexFieldData<?> keyField, String scoreOperator,
-                            String[] keyPrefixes, String boostOperator, Float boostWeight, Float[] scoreWeights, String[] scoreFunctions) {
+                            String[] keyPrefixes, String boostOperator, Float boostWeight, Float[] scoreWeights,
+                            String[] scoreFunctions, String userId) {
             super(windowSize, RedisRescorer.INSTANCE);
             this.keyPrefix = keyPrefix;
             this.keyField = keyField;
@@ -316,6 +330,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
             this.boostWeight = boostWeight;
             this.scoreWeights = scoreWeights;
             this.scoreFunctions = scoreFunctions;
+            this.userId = userId;
 
         }
     }
@@ -411,25 +426,26 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
                                     float scoreWeight = getScoreWeight(context.scoreWeights, j);
 
                                     if (redisScore == 0)
-                                        redisScore = getRescore(term, prefix, scoreWeight, j, context.scoreFunctions);
+                                        redisScore = getRescore(term, prefix, scoreWeight, j, context.scoreFunctions,
+                                                context.userId);
 
                                     else {
                                         switch (context.scoreOperator) {
                                             case "ADD":
                                                 redisScore += getRescore(term, prefix, scoreWeight,
-                                                        j, context.scoreFunctions);
+                                                        j, context.scoreFunctions, context.userId);
                                                 break;
                                             case "MULTIPLY":
                                                 redisScore *= getRescore(term, prefix, scoreWeight,
-                                                        j, context.scoreFunctions);
+                                                        j, context.scoreFunctions, context.userId);
                                                 break;
                                             case "SUBTRACT":
                                                 redisScore -= getRescore(term, prefix, scoreWeight,
-                                                        j, context.scoreFunctions);
+                                                        j, context.scoreFunctions, context.userId);
                                                 break;
                                             case "SET":
                                                 redisScore = getRescore(term, prefix, scoreWeight,
-                                                        j, context.scoreFunctions);
+                                                        j, context.scoreFunctions, context.userId);
                                                 break;
                                         }
                                     }
@@ -437,7 +453,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
                             }
                             else{ // keyPrefix
                                 redisScore = getScoreFactor(term, context.keyPrefix,
-                                        getScoreWeight(context.scoreWeights,0));
+                                        getScoreWeight(context.scoreWeights,0), context.userId);
                             }
 
 
@@ -460,24 +476,24 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
 
                                 if (redisScore == 0)
                                     redisScore = getRescore(String.valueOf(numericDocValues.nextValue()),
-                                            prefix, scoreWeight, j, context.scoreFunctions);
+                                            prefix, scoreWeight, j, context.scoreFunctions, context.userId);
                                 else {
                                     switch (context.scoreOperator) {
                                         case "ADD":
                                             redisScore += getRescore(String.valueOf(numericDocValues.nextValue()),
-                                                    prefix, scoreWeight, j, context.scoreFunctions);
+                                                    prefix, scoreWeight, j, context.scoreFunctions, context.userId);
                                             break;
                                         case "MULTIPLY":
                                             redisScore *= getRescore(String.valueOf(numericDocValues.nextValue()),
-                                                    prefix, scoreWeight, j, context.scoreFunctions);
+                                                    prefix, scoreWeight, j, context.scoreFunctions, context.userId);
                                             break;
                                         case "SUBTRACT":
                                             redisScore -= getRescore(String.valueOf(numericDocValues.nextValue()),
-                                                    prefix, scoreWeight, j, context.scoreFunctions);
+                                                    prefix, scoreWeight, j, context.scoreFunctions, context.userId);
                                             break;
                                         case "SET":
                                             redisScore = getRescore(String.valueOf(numericDocValues.nextValue()),
-                                                    prefix, scoreWeight, j, context.scoreFunctions);
+                                                    prefix, scoreWeight, j, context.scoreFunctions, context.userId);
                                             break;
                                     }
                                 }
@@ -486,7 +502,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
 
                         else{ //keyPrefix
                             redisScore = getScoreFactor(String.valueOf(numericDocValues.nextValue()),
-                                    context.keyPrefix, getScoreWeight(context.scoreWeights, 0));
+                                    context.keyPrefix, getScoreWeight(context.scoreWeights, 0), context.userId);
                         }
                     }
 
@@ -525,15 +541,16 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
         }
 
         private static float getRescore(final String key, @Nullable final String keyPrefix, @Nullable float scoreWeight,
-                                        @Nullable int keyPrefixesIndex, @Nullable String[] scoreFunctions)
+                                        @Nullable int keyPrefixesIndex, @Nullable String[] scoreFunctions,
+                                        @Nullable String userId)
                 throws ScoreFunctionParseException {
             if(scoreWeight == 0) //Optimizations
                 return 0f;
 
             if (scoreFunctions == null || scoreFunctions.length == 0)
-                return getScoreFactor(key, keyPrefix, scoreWeight);
+                return getScoreFactor(key, keyPrefix, scoreWeight, userId);
             //add exception here
-            float scoreFactor = getScoreFactor(key, keyPrefix,1);
+            float scoreFactor = getScoreFactor(key, keyPrefix,1, userId);
             Float res = null;
 
             if( keyPrefixesIndex >= scoreFunctions.length || Objects.equals(scoreFunctions[keyPrefixesIndex], "null")){
@@ -561,14 +578,15 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
 
 
         //ScoreWeight Default Value must be 1
-        private static float getScoreFactor(final String key, @Nullable final String keyPrefix,float scoreWeight) {
+        private static float getScoreFactor(final String key, @Nullable final String keyPrefix,
+                                            float scoreWeight, @Nullable String userId ) {
             assert key != null;
 
             return AccessController.doPrivileged((PrivilegedAction<Float>) () -> {
                 if (scoreWeight == 0) //Optimization
                     return 0f;
 
-                final String fullKey = fullKey(key, keyPrefix);
+                final String fullKey = fullKey(key, keyPrefix, userId);
                 final String factor ;
                 String _factorTmp = null;
 
@@ -608,11 +626,13 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
             return scoreWeights[index];
         }
 
-        private static String fullKey(final String key, @Nullable final String keyPrefix) {
-            if (keyPrefix == null) {
-                return key;
-            } else {
-                return keyPrefix + key;
+        private static String fullKey(final String key, @Nullable final String keyPrefix, @Nullable final String userId) {
+            if (keyPrefix == null && userId == null) {
+                return key; // gymId
+            } else if (userId == null){
+                return keyPrefix + key; // keyPrefix-gymId
+            }else {
+                return keyPrefix + userId + "-" + key; // keyPrefix-userId-gymId
             }
         }
 
@@ -632,7 +652,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
             String fieldName = context.keyField.getFieldName();
             String term = getTermFromFieldData(topLevelDocId, fd, leaf, fieldName);
             if (term != null) {
-                float score = getScoreFactor(term, context.keyPrefix, 1f);
+                float score = getScoreFactor(term, context.keyPrefix, 1f, null);
                 return Explanation.match(score, fieldName, singletonList(sourceExplanation));
             } else {
                 return Explanation.noMatch(fieldName, sourceExplanation);

@@ -11,7 +11,8 @@ public class RedisRescoreBuilderTests extends AbstractWireSerializingTestCase<Re
         String factorField = randomBoolean() ? null : randomAlphaOfLength(5);
         try {
             return new RedisRescoreBuilder("prefix-", factorField,"MULTIPLY",
-                    null,"MULTIPLY",null, null, null).windowSize(between(0, Integer.MAX_VALUE));
+                    null,"MULTIPLY",null, null, null,
+                    null).windowSize(between(0, Integer.MAX_VALUE));
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
@@ -26,7 +27,7 @@ public class RedisRescoreBuilderTests extends AbstractWireSerializingTestCase<Re
     protected RedisRescoreBuilder mutateInstance(RedisRescoreBuilder instance) throws IOException {
         return new RedisRescoreBuilder(instance.keyField(), instance.keyPrefix(), instance.scoreOperator(),
                 instance.keyPrefixes(), instance.boostOperator(), instance.boostWeight(), instance.scoreWeights()
-                , instance.scoreFunctions());
+                , instance.scoreFunctions(), instance.userId());
     }
 
 
