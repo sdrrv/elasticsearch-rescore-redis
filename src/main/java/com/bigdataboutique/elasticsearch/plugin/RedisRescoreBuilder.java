@@ -119,7 +119,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
                                @Nullable Float boostWeight, @Nullable Float[] scoreWeights,
                                @Nullable String[] scoreFunctions, @Nullable String userId)
             throws ScoreOperatorException {
-
+        log.info("Creating a new instance with "+ keyField);
         this.keyField =  keyField;
         this.keyPrefix = keyPrefix;
         this.scoreOperator = scoreOperator == null ? SCORE_OPERATOR_DEFAULT : scoreOperator;
@@ -436,8 +436,9 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
                                                         j, context.scoreFunctions, context.userId);
                                                 break;
                                             case "MULTIPLY":
-                                                redisScore *= getRescore(term, prefix, scoreWeight,
+                                                float tmp = getRescore(term, prefix, scoreWeight,
                                                         j, context.scoreFunctions, context.userId);
+                                                redisScore *= tmp == 0 ? 1 : tmp; // if tmp == 0 then tmp = 1
                                                 break;
                                             case "SUBTRACT":
                                                 redisScore -= getRescore(term, prefix, scoreWeight,
@@ -484,8 +485,9 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
                                                     prefix, scoreWeight, j, context.scoreFunctions, context.userId);
                                             break;
                                         case "MULTIPLY":
-                                            redisScore *= getRescore(String.valueOf(numericDocValues.nextValue()),
+                                            float tmp =  getRescore(String.valueOf(numericDocValues.nextValue()),
                                                     prefix, scoreWeight, j, context.scoreFunctions, context.userId);
+                                            redisScore *= tmp == 0 ? 1 : tmp; // if tmp == 0 then tmp = 1
                                             break;
                                         case "SUBTRACT":
                                             redisScore -= getRescore(String.valueOf(numericDocValues.nextValue()),
@@ -547,11 +549,13 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
             if(scoreWeight == 0) //Optimizations
                 return 0f;
 
-            if (scoreFunctions == null || scoreFunctions.length == 0)
+            if (scoreFunctions == null || scoreFunctions.length == 0 )
                 return getScoreFactor(key, keyPrefix, scoreWeight, userId);
+
             //add exception here
             float scoreFactor = getScoreFactor(key, keyPrefix,1, userId);
             Float res = null;
+            log.warn("###########" + scoreFactor + "*" +scoreWeight) ;
 
             if( keyPrefixesIndex >= scoreFunctions.length || Objects.equals(scoreFunctions[keyPrefixesIndex], "null")){
                 return scoreFactor * scoreWeight;
@@ -590,9 +594,11 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
                 final String factor ;
                 String _factorTmp = null;
 
+                log.debug("Get redis : "+fullKey);
+
                 try{
                     _factorTmp = jedis.get(fullKey);
-                    log.info("Get Key: "+fullKey+ " --> "+_factorTmp);
+                    //log.info("Get Key: "+fullKey+ " --> "+_factorTmp);
                 }
                 catch(JedisConnectionException e){
                     log.warn("BREAK CONNECTION ERROR, try to re-correct");
@@ -603,8 +609,8 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
                 factor = _factorTmp;
 
                 if (factor == null) {
-                    log.debug("Redis rescore factor null for key " + keyPrefix + key);
-                    return 1.0f;
+                    log.debug("Redis rescore factor null for key " + fullKey);
+                    return 0f; // returning 0 for adding is better.
                 }
 
                 try { // Here
@@ -612,7 +618,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
 
                 } catch (NumberFormatException ignored_e) {
                     log.warn("Redis rescore factor NumberFormatException for key " + fullKey);
-                    return 1.0f;
+                    return 0f;
                 }
             });
         }
@@ -620,14 +626,14 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
         private float getScoreWeight(@Nullable Float[] scoreWeights, int index){
             if(scoreWeights == null || scoreWeights.length == 0)
                 return 1f;
-            float size = (float) scoreWeights.length;
+            int size = scoreWeights.length;
             if(index >= size)
                 return 1f;
             return scoreWeights[index];
         }
 
         private static String fullKey(final String key, @Nullable final String keyPrefix, @Nullable final String userId) {
-            if (keyPrefix == null && userId == null) {
+            if (keyPrefix == null) {
                 return key; // gymId
             } else if (userId == null){
                 return keyPrefix + key; // keyPrefix-gymId
