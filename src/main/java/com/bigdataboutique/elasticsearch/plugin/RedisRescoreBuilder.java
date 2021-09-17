@@ -555,7 +555,7 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
             //add exception here
             float scoreFactor = getScoreFactor(key, keyPrefix,1, userId);
             Float res = null;
-            log.warn("###########" + scoreFactor + "*" +scoreWeight) ;
+            //log.debug("--->" + scoreFactor + "*" +scoreWeight) ;
 
             if( keyPrefixesIndex >= scoreFunctions.length || Objects.equals(scoreFunctions[keyPrefixesIndex], "null")){
                 return scoreFactor * scoreWeight;
@@ -594,14 +594,12 @@ public class RedisRescoreBuilder extends RescorerBuilder<RedisRescoreBuilder> {
                 final String factor ;
                 String _factorTmp = null;
 
-                log.debug("Get redis : "+fullKey);
-
                 try{
                     _factorTmp = jedis.get(fullKey);
-                    //log.info("Get Key: "+fullKey+ " --> "+_factorTmp);
+                    log.info("Get Key: "+fullKey+ " --> "+_factorTmp);
                 }
                 catch(JedisConnectionException e){
-                    log.warn("BREAK CONNECTION ERROR, try to re-correct");
+                    log.error("BREAK CONNECTION ERROR, try to re-correct");
                     setJedis(new Jedis( config.getRedisUrl() ));
                     _factorTmp = jedis.get(fullKey);
                 }

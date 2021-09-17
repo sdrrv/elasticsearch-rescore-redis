@@ -1,3 +1,5 @@
+@This fork was created in the scope of a summer interhsip at Gympass
+
 # Elasticsearch Redis Rescore Plugin
 
 Ever wanted to use data from external systems to influence scoring in Elasticsearch? now you can.
