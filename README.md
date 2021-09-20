@@ -1,4 +1,4 @@
-@This fork was created in the scope of a summer interhsip at Gympass
+@This fork was created in the scope of a summer internhsip at Gympass
 
 # Elasticsearch Redis Rescore Plugin
 
