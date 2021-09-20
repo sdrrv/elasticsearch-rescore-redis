@@ -70,7 +70,7 @@ For example, if the **elasticsearch_score** is **2** and the `boost_weight` **0.
 ## --> `score_operator` | `boost_operator` : str
 Can be:
 
-- MULTiPLY
+- MULTIPLY
 - ADD
 - SET
 - SUBTRACT
